@@ -62,7 +62,9 @@ The app is static files, so anything that serves HTTPS will host it. The quickes
 HTTPS matters: the microphone and screen capture are blocked on plain `http://`, with `localhost`
 the one exception.
 
-Then open **Settings** in the app and paste an API key:
+Then open **Settings** in the app and paste an API key. Each key field has a **Paste** button and a
+**Check** button — Check makes one tiny call and tells you straight away whether the key works, rather
+than letting you find out when your first question fails.
 
 | You want | Get a key from | Cost, roughly |
 |---|---|---|
@@ -77,7 +79,8 @@ that? Set **Transcription** to *Live in the browser* (free) or *Paste it myself*
 
 ## Using it on an iPhone
 
-Safari gives no web app access to the screen, so the built-in recorder does that job:
+Safari gives no web app access to the screen, so the built-in recorder does that job. The app shows
+these steps itself, under **How to record your phone screen** on the Record tab:
 
 1. Add **Screen Recording** to Control Centre once (Settings → Control Centre).
 2. Swipe down, tap ⏺, and start the video you want to keep.

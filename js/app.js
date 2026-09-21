@@ -4,7 +4,7 @@
 import * as store from './store.js';
 import { Recorder, canCaptureScreen, canCaptureMic, posterFor, keyframes, probeDuration } from './media.js';
 import { transcribeWithOpenAI, LiveTranscriber, canRecogniseLive, parsePasted } from './transcribe.js';
-import { streamChat, describeModel, activeProvider, missingCredentials, ANTHROPIC_MODELS, OPENAI_MODELS } from './ai.js';
+import { streamChat, checkCredentials, describeModel, activeProvider, missingCredentials, ANTHROPIC_MODELS, OPENAI_MODELS } from './ai.js';
 import { ACTIONS, actionById, buildPrompt, systemPrompt, SUGGEST_PROMPT, parseSuggestions } from './prompts.js';
 import { renderMarkdown } from './md.js';
 
@@ -103,6 +103,8 @@ function initRecordView() {
   if (isIOS) {
     $('#mode-import-note').textContent = 'Screen Recording from Control Centre, or any clip in Photos';
   }
+
+  if (isIOS) $('#ios-guide').hidden = false;
 
   $('#record-tip').innerHTML = isIOS
     ? 'On iPhone: start <strong>Screen Recording</strong> from Control Centre, watch your video, stop, then come back and tap <strong>Import a recording</strong>.'
@@ -726,9 +728,45 @@ function initSettings() {
       state.settings[key] = prop === 'checked' ? el.checked : el.value.trim();
       store.saveSettings(state.settings);
       syncSettingsUi();
+      renderSetupPrompt();
       if (state.current) renderActions();
     });
   }
+
+  $$('[data-paste]').forEach((btn) => btn.addEventListener('click', async () => {
+    const field = $(btn.dataset.paste);
+    try {
+      const text = (await navigator.clipboard.readText()).trim();
+      if (!text) { toast('Clipboard is empty.'); return; }
+      field.value = text;
+      field.dispatchEvent(new Event('change'));
+      toast('Pasted.');
+    } catch {
+      field.focus();
+      toast('This browser will not read the clipboard — long-press the field and paste.', 'error');
+    }
+  }));
+
+  $$('[data-check]').forEach((btn) => btn.addEventListener('click', async () => {
+    const provider = btn.dataset.check;
+    const result = $(`[data-result="${provider}"]`);
+    const show = (text, kind) => {
+      if (!result) { toast(text, kind === 'bad' ? 'error' : ''); return; }
+      result.hidden = false;
+      result.className = `check-result ${kind}`;
+      result.textContent = text;
+    };
+    btn.disabled = true;
+    show('Checking…', '');
+    try {
+      show(`✓ ${await checkCredentials(state.settings, provider)}`, 'ok');
+      renderSetupPrompt();
+    } catch (err) {
+      show(`✕ ${err.message}`, 'bad');
+    } finally {
+      btn.disabled = false;
+    }
+  }));
 
   $('#btn-clear').addEventListener('click', async () => {
     if (!confirm('Delete every recording, transcript and answer on this device?')) return;
@@ -824,6 +862,10 @@ function initSessionView() {
   });
 }
 
+function renderSetupPrompt() {
+  $('#setup-prompt').hidden = !missingCredentials(state.settings);
+}
+
 async function checkStorage() {
   const mode = await store.storageMode();
   if (mode === 'durable') return;
@@ -837,6 +879,7 @@ async function checkStorage() {
 function init() {
   $$('[data-goto]').forEach((el) => el.addEventListener('click', () => go(el.dataset.goto)));
   initRecordView();
+  renderSetupPrompt();
   initSessionView();
   initSettings();
   initInstall();

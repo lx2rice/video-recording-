@@ -374,6 +374,38 @@ select {
   padding-right: 34px;
 }
 
+.key-row { display: flex; gap: 6px; align-items: stretch; }
+.key-row input { flex: 1; min-width: 0; }
+.key-row button { flex: none; white-space: nowrap; }
+
+.check-result { font-size: 13px; padding: 8px 10px; border-radius: 10px; background: var(--bg-sunken); }
+.check-result.ok { color: var(--ok); }
+.check-result.bad { color: #ff9aae; }
+
+.banner.setup {
+  border-color: #7c5cff55;
+  background: var(--accent-soft);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.banner.setup button { margin-left: auto; }
+
+.guide {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  padding: 12px 14px;
+  margin-top: 16px;
+  font-size: 14px;
+}
+.guide summary { cursor: pointer; font-weight: 600; }
+.guide ol { padding-left: 20px; margin: 12px 0 8px; }
+.guide li { margin-bottom: 8px; }
+.guide p { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+
 .toggle { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; font-size: 14px; }
 .toggle input { width: 20px; height: 20px; flex: none; accent-color: var(--accent); margin-top: 1px; }
 

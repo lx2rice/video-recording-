@@ -389,6 +389,38 @@ select {
   padding-right: 34px;
 }
 
+.key-row { display: flex; gap: 6px; align-items: stretch; }
+.key-row input { flex: 1; min-width: 0; }
+.key-row button { flex: none; white-space: nowrap; }
+
+.check-result { font-size: 13px; padding: 8px 10px; border-radius: 10px; background: var(--bg-sunken); }
+.check-result.ok { color: var(--ok); }
+.check-result.bad { color: #ff9aae; }
+
+.banner.setup {
+  border-color: #7c5cff55;
+  background: var(--accent-soft);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.banner.setup button { margin-left: auto; }
+
+.guide {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  padding: 12px 14px;
+  margin-top: 16px;
+  font-size: 14px;
+}
+.guide summary { cursor: pointer; font-weight: 600; }
+.guide ol { padding-left: 20px; margin: 12px 0 8px; }
+.guide li { margin-bottom: 8px; }
+.guide p { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+
 .toggle { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; font-size: 14px; }
 .toggle input { width: 20px; height: 20px; flex: none; accent-color: var(--accent); margin-top: 1px; }
 
@@ -461,6 +493,10 @@ select {
   </header>
 
   <div class="banner" id="storage-warning" hidden></div>
+  <div class="banner setup" id="setup-prompt" hidden>
+    <strong>One thing first —</strong> add an API key so the AI can answer.
+    <button class="primary small" data-goto="settings">Open Settings</button>
+  </div>
 
   <main id="main">
 
@@ -497,6 +533,20 @@ select {
         <h3>Live transcript</h3>
         <p id="live-text"></p>
       </div>
+
+      <details class="guide" id="ios-guide" hidden>
+        <summary>How to record your phone screen</summary>
+        <ol>
+          <li>Swipe down for <strong>Control Centre</strong>. No ⏺ button? Add it in
+              Settings → Control Centre → <em>Screen Recording</em>.</li>
+          <li><strong>Long-press</strong> the ⏺ button and make sure <strong>Microphone is off</strong> —
+              you want the video's own sound, not the room.</li>
+          <li>Tap <strong>Start Recording</strong>, wait for the countdown, then play your video.</li>
+          <li>Tap the red clock in the status bar → <strong>Stop</strong>. iOS saves it to Photos.</li>
+          <li>Come back here and tap <strong>Import a recording</strong>.</li>
+        </ol>
+        <p>Leave this app while recording — iOS keeps recording everything on screen.</p>
+      </details>
 
       <p class="tip" id="record-tip"></p>
       <input type="file" id="file-input" accept="video/*,audio/*" hidden />
@@ -571,7 +621,12 @@ select {
         <div data-provider="anthropic">
           <div class="field">
             <label for="set-anthropic-key">Anthropic API key</label>
-            <input id="set-anthropic-key" type="password" placeholder="sk-ant-…" autocomplete="off" />
+            <div class="key-row">
+              <input id="set-anthropic-key" type="password" placeholder="sk-ant-…" autocomplete="off" />
+              <button class="ghost small" data-paste="#set-anthropic-key">Paste</button>
+              <button class="ghost small" data-check="anthropic">Check</button>
+            </div>
+            <div class="check-result" data-result="anthropic" hidden></div>
             <small>From <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>. Stored only on this device.</small>
           </div>
           <div class="field">
@@ -598,7 +653,12 @@ select {
         <div data-provider="openai" hidden>
           <div class="field">
             <label for="set-openai-key">OpenAI API key</label>
-            <input id="set-openai-key" type="password" placeholder="sk-…" autocomplete="off" />
+            <div class="key-row">
+              <input id="set-openai-key" type="password" placeholder="sk-…" autocomplete="off" />
+              <button class="ghost small" data-paste="#set-openai-key">Paste</button>
+              <button class="ghost small" data-check="openai">Check</button>
+            </div>
+            <div class="check-result" data-result="openai" hidden></div>
             <small>From <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com</a>. Stored only on this device.</small>
           </div>
           <div class="field">
@@ -622,7 +682,11 @@ select {
         </div>
         <div class="field" data-transcriber="openai">
           <label for="set-openai-key2">OpenAI API key (for Whisper)</label>
-          <input id="set-openai-key2" type="password" placeholder="sk-…" autocomplete="off" />
+          <div class="key-row">
+            <input id="set-openai-key2" type="password" placeholder="sk-…" autocomplete="off" />
+            <button class="ghost small" data-paste="#set-openai-key2">Paste</button>
+            <button class="ghost small" data-check="openai">Check</button>
+          </div>
           <small>Whisper is OpenAI's, so this is needed even when Claude writes the answers.</small>
         </div>
         <div class="field" data-transcriber="openai">
@@ -1705,6 +1769,45 @@ async function streamChat(settings, opts) {
     : streamAnthropic(settings, opts);
 }
 
+/**
+ * Verify a key actually works, so a bad paste is caught in Settings rather than
+ * halfway through a question. The OpenAI check lists models (free); the
+ * Anthropic one is a 16-token message, which costs a fraction of a cent.
+ */
+async function checkCredentials(settings, provider) {
+  if (provider === 'openai') {
+    if (!settings.proxyUrl && !settings.openaiKey) throw new Error('No OpenAI key to check.');
+    const headers = {};
+    if (!settings.proxyUrl) headers.Authorization = `Bearer ${settings.openaiKey}`;
+    const res = await fetch(
+      settings.proxyUrl ? `${settings.proxyUrl.replace(/\/$/, '')}/openai/v1/models` : 'https://api.openai.com/v1/models',
+      { headers },
+    ).catch((err) => { throw networkError(err); });
+    if (!res.ok) throw new Error(apiError('OpenAI', res.status, await res.text()));
+    const data = await res.json().catch(() => null);
+    const count = data && Array.isArray(data.data) ? data.data.length : 0;
+    return `Key works — ${count} model${count === 1 ? '' : 's'} available.`;
+  }
+
+  if (!settings.proxyUrl && !settings.anthropicKey) throw new Error('No Anthropic key to check.');
+  const headers = { 'content-type': 'application/json', 'anthropic-version': ANTHROPIC_VERSION };
+  if (!settings.proxyUrl) {
+    headers['x-api-key'] = settings.anthropicKey;
+    headers['anthropic-dangerous-direct-browser-access'] = 'true';
+  }
+  const res = await fetch(url(settings, 'anthropic', '/v1/messages'), {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      model: settings.anthropicModel || 'claude-opus-5',
+      max_tokens: 16,
+      messages: [{ role: 'user', content: 'ping' }],
+    }),
+  }).catch((err) => { throw networkError(err); });
+  if (!res.ok) throw new Error(apiError('Claude', res.status, await res.text()));
+  return `Key works — ${settings.anthropicModel || 'claude-opus-5'} responded.`;
+}
+
 // --- Anthropic --------------------------------------------------------------
 
 function anthropicContent(message, images) {
@@ -1894,7 +1997,7 @@ function networkError(err) {
   );
 }
 
-return { ANTHROPIC_MODELS, OPENAI_MODELS, activeProvider, describeModel, missingCredentials, streamChat };
+return { ANTHROPIC_MODELS, OPENAI_MODELS, activeProvider, describeModel, missingCredentials, streamChat, checkCredentials };
 })();
 MOD.prompts = (() => {
 // The "what do you want to do with this?" menu, and the prompts behind it.
@@ -2077,7 +2180,7 @@ MOD.app = (() => {
 const store = MOD.store;
 const { Recorder, canCaptureScreen, canCaptureMic, posterFor, keyframes, probeDuration } = MOD.media;
 const { transcribeWithOpenAI, LiveTranscriber, canRecogniseLive, parsePasted } = MOD.transcribe;
-const { streamChat, describeModel, activeProvider, missingCredentials, ANTHROPIC_MODELS, OPENAI_MODELS } = MOD.ai;
+const { streamChat, checkCredentials, describeModel, activeProvider, missingCredentials, ANTHROPIC_MODELS, OPENAI_MODELS } = MOD.ai;
 const { ACTIONS, actionById, buildPrompt, systemPrompt, SUGGEST_PROMPT, parseSuggestions } = MOD.prompts;
 const { renderMarkdown } = MOD.md;
 
@@ -2176,6 +2279,8 @@ function initRecordView() {
   if (isIOS) {
     $('#mode-import-note').textContent = 'Screen Recording from Control Centre, or any clip in Photos';
   }
+
+  if (isIOS) $('#ios-guide').hidden = false;
 
   $('#record-tip').innerHTML = isIOS
     ? 'On iPhone: start <strong>Screen Recording</strong> from Control Centre, watch your video, stop, then come back and tap <strong>Import a recording</strong>.'
@@ -2799,9 +2904,45 @@ function initSettings() {
       state.settings[key] = prop === 'checked' ? el.checked : el.value.trim();
       store.saveSettings(state.settings);
       syncSettingsUi();
+      renderSetupPrompt();
       if (state.current) renderActions();
     });
   }
+
+  $$('[data-paste]').forEach((btn) => btn.addEventListener('click', async () => {
+    const field = $(btn.dataset.paste);
+    try {
+      const text = (await navigator.clipboard.readText()).trim();
+      if (!text) { toast('Clipboard is empty.'); return; }
+      field.value = text;
+      field.dispatchEvent(new Event('change'));
+      toast('Pasted.');
+    } catch {
+      field.focus();
+      toast('This browser will not read the clipboard — long-press the field and paste.', 'error');
+    }
+  }));
+
+  $$('[data-check]').forEach((btn) => btn.addEventListener('click', async () => {
+    const provider = btn.dataset.check;
+    const result = $(`[data-result="${provider}"]`);
+    const show = (text, kind) => {
+      if (!result) { toast(text, kind === 'bad' ? 'error' : ''); return; }
+      result.hidden = false;
+      result.className = `check-result ${kind}`;
+      result.textContent = text;
+    };
+    btn.disabled = true;
+    show('Checking…', '');
+    try {
+      show(`✓ ${await checkCredentials(state.settings, provider)}`, 'ok');
+      renderSetupPrompt();
+    } catch (err) {
+      show(`✕ ${err.message}`, 'bad');
+    } finally {
+      btn.disabled = false;
+    }
+  }));
 
   $('#btn-clear').addEventListener('click', async () => {
     if (!confirm('Delete every recording, transcript and answer on this device?')) return;
@@ -2897,6 +3038,10 @@ function initSessionView() {
   });
 }
 
+function renderSetupPrompt() {
+  $('#setup-prompt').hidden = !missingCredentials(state.settings);
+}
+
 async function checkStorage() {
   const mode = await store.storageMode();
   if (mode === 'durable') return;
@@ -2910,6 +3055,7 @@ async function checkStorage() {
 function init() {
   $$('[data-goto]').forEach((el) => el.addEventListener('click', () => go(el.dataset.goto)));
   initRecordView();
+  renderSetupPrompt();
   initSessionView();
   initSettings();
   initInstall();

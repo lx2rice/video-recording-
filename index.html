@@ -26,6 +26,10 @@
   </header>
 
   <div class="banner" id="storage-warning" hidden></div>
+  <div class="banner setup" id="setup-prompt" hidden>
+    <strong>One thing first —</strong> add an API key so the AI can answer.
+    <button class="primary small" data-goto="settings">Open Settings</button>
+  </div>
 
   <main id="main">
 
@@ -62,6 +66,20 @@
         <h3>Live transcript</h3>
         <p id="live-text"></p>
       </div>
+
+      <details class="guide" id="ios-guide" hidden>
+        <summary>How to record your phone screen</summary>
+        <ol>
+          <li>Swipe down for <strong>Control Centre</strong>. No ⏺ button? Add it in
+              Settings → Control Centre → <em>Screen Recording</em>.</li>
+          <li><strong>Long-press</strong> the ⏺ button and make sure <strong>Microphone is off</strong> —
+              you want the video's own sound, not the room.</li>
+          <li>Tap <strong>Start Recording</strong>, wait for the countdown, then play your video.</li>
+          <li>Tap the red clock in the status bar → <strong>Stop</strong>. iOS saves it to Photos.</li>
+          <li>Come back here and tap <strong>Import a recording</strong>.</li>
+        </ol>
+        <p>Leave this app while recording — iOS keeps recording everything on screen.</p>
+      </details>
 
       <p class="tip" id="record-tip"></p>
       <input type="file" id="file-input" accept="video/*,audio/*" hidden />
@@ -136,7 +154,12 @@
         <div data-provider="anthropic">
           <div class="field">
             <label for="set-anthropic-key">Anthropic API key</label>
-            <input id="set-anthropic-key" type="password" placeholder="sk-ant-…" autocomplete="off" />
+            <div class="key-row">
+              <input id="set-anthropic-key" type="password" placeholder="sk-ant-…" autocomplete="off" />
+              <button class="ghost small" data-paste="#set-anthropic-key">Paste</button>
+              <button class="ghost small" data-check="anthropic">Check</button>
+            </div>
+            <div class="check-result" data-result="anthropic" hidden></div>
             <small>From <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>. Stored only on this device.</small>
           </div>
           <div class="field">
@@ -163,7 +186,12 @@
         <div data-provider="openai" hidden>
           <div class="field">
             <label for="set-openai-key">OpenAI API key</label>
-            <input id="set-openai-key" type="password" placeholder="sk-…" autocomplete="off" />
+            <div class="key-row">
+              <input id="set-openai-key" type="password" placeholder="sk-…" autocomplete="off" />
+              <button class="ghost small" data-paste="#set-openai-key">Paste</button>
+              <button class="ghost small" data-check="openai">Check</button>
+            </div>
+            <div class="check-result" data-result="openai" hidden></div>
             <small>From <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com</a>. Stored only on this device.</small>
           </div>
           <div class="field">
@@ -187,7 +215,11 @@
         </div>
         <div class="field" data-transcriber="openai">
           <label for="set-openai-key2">OpenAI API key (for Whisper)</label>
-          <input id="set-openai-key2" type="password" placeholder="sk-…" autocomplete="off" />
+          <div class="key-row">
+            <input id="set-openai-key2" type="password" placeholder="sk-…" autocomplete="off" />
+            <button class="ghost small" data-paste="#set-openai-key2">Paste</button>
+            <button class="ghost small" data-check="openai">Check</button>
+          </div>
           <small>Whisper is OpenAI's, so this is needed even when Claude writes the answers.</small>
         </div>
         <div class="field" data-transcriber="openai">

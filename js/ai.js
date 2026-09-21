@@ -64,6 +64,45 @@ export async function streamChat(settings, opts) {
     : streamAnthropic(settings, opts);
 }
 
+/**
+ * Verify a key actually works, so a bad paste is caught in Settings rather than
+ * halfway through a question. The OpenAI check lists models (free); the
+ * Anthropic one is a 16-token message, which costs a fraction of a cent.
+ */
+export async function checkCredentials(settings, provider) {
+  if (provider === 'openai') {
+    if (!settings.proxyUrl && !settings.openaiKey) throw new Error('No OpenAI key to check.');
+    const headers = {};
+    if (!settings.proxyUrl) headers.Authorization = `Bearer ${settings.openaiKey}`;
+    const res = await fetch(
+      settings.proxyUrl ? `${settings.proxyUrl.replace(/\/$/, '')}/openai/v1/models` : 'https://api.openai.com/v1/models',
+      { headers },
+    ).catch((err) => { throw networkError(err); });
+    if (!res.ok) throw new Error(apiError('OpenAI', res.status, await res.text()));
+    const data = await res.json().catch(() => null);
+    const count = data && Array.isArray(data.data) ? data.data.length : 0;
+    return `Key works — ${count} model${count === 1 ? '' : 's'} available.`;
+  }
+
+  if (!settings.proxyUrl && !settings.anthropicKey) throw new Error('No Anthropic key to check.');
+  const headers = { 'content-type': 'application/json', 'anthropic-version': ANTHROPIC_VERSION };
+  if (!settings.proxyUrl) {
+    headers['x-api-key'] = settings.anthropicKey;
+    headers['anthropic-dangerous-direct-browser-access'] = 'true';
+  }
+  const res = await fetch(url(settings, 'anthropic', '/v1/messages'), {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      model: settings.anthropicModel || 'claude-opus-5',
+      max_tokens: 16,
+      messages: [{ role: 'user', content: 'ping' }],
+    }),
+  }).catch((err) => { throw networkError(err); });
+  if (!res.ok) throw new Error(apiError('Claude', res.status, await res.text()));
+  return `Key works — ${settings.anthropicModel || 'claude-opus-5'} responded.`;
+}
+
 // --- Anthropic --------------------------------------------------------------
 
 function anthropicContent(message, images) {

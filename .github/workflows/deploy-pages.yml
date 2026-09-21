@@ -1,11 +1,9 @@
 name: Deploy to GitHub Pages
 
-# Publishes the app as a static site.
-#
-# Turn Pages on once, by hand: Settings → Pages → Source: GitHub Actions.
-# A workflow token cannot do it — creating the Pages site is an owner action and
-# the API answers "Resource not accessible by integration". Once it exists, every
-# push to main publishes.
+# Publishes the app as a static site. configure-pages tries to switch Pages on
+# itself; if the token is refused, do it once by hand under
+# Settings → Pages → Source: GitHub Actions and re-run. Public repositories get
+# Pages for free — private ones need a paid plan.
 on:
   push:
     branches: [main]
@@ -29,6 +27,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .

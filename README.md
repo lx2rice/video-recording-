@@ -1,3 +1,15 @@
+# Free on-device transcription (new default)
+
+Import a recording and ClipMind automatically transcribes with multilingual, quantized Whisper Tiny through Transformers.js 2.17.2. No API key, account or per-minute bill. Audio is decoded locally and processed in a dedicated worker; the runtime/model download from jsDelivr/Hugging Face. Model files are browser-cached where available, but offline availability is not guaranteed. First use needs internet and downloads tens of MB. Keep the app foregrounded; phone speed, memory, format support and accuracy vary.
+
+This mode supports clips up to 10 minutes and 100 MB. Longer files must be trimmed; they are never silently truncated. Cancel terminates the worker and preserves the recording and any previously saved transcript. Failures never invoke a paid fallback. Free-mode automatic notes are local extracted highlights even if an AI key was previously saved. Optional paid transcription and explicit AI analysis remain available in Settings.
+
+On iPhone, use Control Centre Screen Recording, then import the result. A Home Screen web app cannot directly record another app. Actual iPhone performance has not been verified on hardware.
+
+The single-file build includes the worker source but still needs internet to load the speech runtime/model on first use.
+
+---
+
 # ClipMind
 
 Record the video you're watching, get the transcript, then tell Claude or ChatGPT what to do with it.
@@ -18,7 +30,7 @@ The main flow is **Capture → Transcript → Concise note**. Three bottom tabs 
 - Full transcripts are saved without truncation and have one-tap Copy for pasting into ChatGPT or another AI. Opening ChatGPT does not automatically send anything.
 - A connected AI provider creates a concise summary automatically after transcription or first transcript paste. Without credentials, the app selects **Extracted highlights** locally, explicitly labelled as sentence extraction rather than an AI summary.
 - Notes are editable and save on leaving the field or tapping Save note. Search titles, notes and transcripts. Export a text file containing both the note and full transcript.
-- Audio-to-text requires an OpenAI API key (or configured proxy). Existing live microphone recognition remains available where the browser supports it; it does not transcribe another app's internal audio.
+- Paid OpenAI audio-to-text requires an API key (or configured proxy); the new default runs on-device for free. Existing live microphone recognition remains available where the browser supports it; it does not transcribe another app's internal audio.
 - Existing IndexedDB records and settings are retained. Content is device-local, not cloud backed up; clearing site data removes it.
 - The API-backed paths require valid credentials and provider availability. No credentials are bundled with this repository.
 

@@ -193,7 +193,7 @@ export const defaultSettings = {
   openaiKey: '',
   openaiModel: 'gpt-4o-mini',
   proxyUrl: '',
-  transcriber: 'openai',            // 'openai' | 'webspeech' | 'manual'
+  transcriber: 'local',            // 'openai' | 'webspeech' | 'manual'
   whisperModel: 'whisper-1',
   language: '',
   includeFrames: false,
@@ -205,7 +205,10 @@ export const defaultSettings = {
 export function loadSettings() {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
-    return { ...defaultSettings, ...(raw ? JSON.parse(raw) : {}) };
+    const settings = { ...defaultSettings, ...(raw ? JSON.parse(raw) : {}) };
+    // One-time migration for the requested free default; later user choices persist.
+    if (!settings.freeTranscriptionV1) { settings.transcriber = 'local'; settings.freeTranscriptionV1 = true; saveSettings(settings); }
+    return settings;
   } catch {
     return { ...defaultSettings, ...(settingsFallback || {}) };
   }

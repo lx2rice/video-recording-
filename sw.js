@@ -2,7 +2,7 @@
 // precached and served cache-first; API calls are cross-origin POSTs and never
 // touch this worker.
 
-const VERSION = 'clipmind-v2-notebook';
+const VERSION = 'clipmind-v3-free-asr';
 const SHELL = [
   './',
   './index.html',
@@ -11,6 +11,7 @@ const SHELL = [
   './js/app.js',
   './js/ai.js',
   './js/audio.js',
+  './js/local-asr.js',
   './js/md.js',
   './js/media.js',
   './js/prompts.js',

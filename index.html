@@ -35,6 +35,7 @@
     <!-- ── Record ─────────────────────────────────────────────────────── -->
     <section class="view" id="view-record" data-view="record">
       <div class="intro"><span class="eyebrow">YOUR VIDEO NOTEBOOK</span><h2>Watch it.<br>Keep what matters.</h2><p>Turn a video into words, a concise note,<br>and ideas you can use.</p></div>
+      <p class="free-caption">Free automatic transcripts · No API key<br><small>First use downloads a speech model. Keep the app open.</small></p>
       <div class="journey" aria-label="Workflow"><span><b>1</b> Capture</span><span><b>2</b> Transcript</span><span><b>3</b> Note</span></div>
       <div class="stage">
         <div class="pulse" id="pulse"><div class="pulse-fill" id="pulse-fill"></div></div>
@@ -114,7 +115,7 @@
             <button class="ghost small" id="btn-copy-transcript">Copy all</button>
           </div>
         </div>
-        <div class="status" id="transcript-status" hidden></div>
+        <div class="status" id="transcript-status" role="status" hidden></div><button class="ghost small" id="btn-cancel-transcription" hidden>Cancel transcription</button>
         <div class="transcript" id="transcript-body"></div>
       </div>
 
@@ -214,7 +215,8 @@
         <div class="field">
           <label for="set-transcriber">How to get the words</label>
           <select id="set-transcriber">
-            <option value="openai">Upload to OpenAI Whisper — accurate, timestamped</option>
+            <option value="local">Free on-device — no API key</option>
+            <option value="openai">Paid OpenAI API — upload for transcription</option>
             <option value="webspeech">Live in the browser — free, no timestamps</option>
             <option value="manual">Paste it myself</option>
           </select>

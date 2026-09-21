@@ -20,9 +20,9 @@ const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 const dataUri = (p, type) => `data:${type};base64,${fs.readFileSync(path.join(ROOT, p)).toString('base64')}`;
 
 // Dependency order: a module may only import ones listed before it.
-const MODULES = ['store', 'media', 'audio', 'md', 'transcribe', 'ai', 'prompts', 'app'];
+const MODULES = ['store', 'media', 'audio', 'local-asr', 'md', 'transcribe', 'ai', 'prompts', 'app'];
 
-const IMPORT_RE = /^import\s+(?:(\*\s+as\s+\w+)|(\{[^}]*\}))\s+from\s+['"]\.\/(\w+)\.js['"];?\s*$/;
+const IMPORT_RE = /^import\s+(?:(\*\s+as\s+\w+)|(\{[^}]*\}))\s+from\s+['"]\.\/([\w-]+)\.js['"];?\s*$/;
 const EXPORT_RE = /^export\s+(?=(?:async\s+)?(?:const|let|var|function|class)\b)/;
 const EXPORT_NAME_RE = /^export\s+(?:async\s+)?(?:const|let|var|function|class)\s+(\w+)/;
 
@@ -38,8 +38,8 @@ function transform(name) {
         throw new Error(`${name}.js imports ${from}.js, which is bundled later — reorder MODULES`);
       }
       return namespace
-        ? `const ${namespace.replace(/^\*\s+as\s+/, '')} = MOD.${from};`
-        : `const ${named.replace(/\bas\b/g, ':')} = MOD.${from};`;
+        ? `const ${namespace.replace(/^\*\s+as\s+/, '')} = MOD[${JSON.stringify(from)}];`
+        : `const ${named.replace(/\bas\b/g, ':')} = MOD[${JSON.stringify(from)}];`;
     }
     if (/^\s*import\s/.test(line)) throw new Error(`${name}.js has an import this builder cannot inline: ${line}`);
 
@@ -49,7 +49,7 @@ function transform(name) {
     return line.replace(EXPORT_RE, '');
   }).join('\n');
 
-  return `MOD.${name} = (() => {\n${body}\nreturn { ${exports.join(', ')} };\n})();`;
+  return `MOD[${JSON.stringify(name)}] = (() => {\n${body}\nreturn { ${exports.join(', ')} };\n})();`;
 }
 
 const manifest = JSON.parse(read('manifest.webmanifest'));

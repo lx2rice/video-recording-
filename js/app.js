@@ -2,6 +2,7 @@
 // drives transcription and the model calls.
 
 import * as store from './store.js';
+import { transcribeLocally } from './local-asr.js';
 import { Recorder, canCaptureScreen, canCaptureMic, posterFor, keyframes, probeDuration } from './media.js';
 import { transcribeWithOpenAI, LiveTranscriber, canRecogniseLive, parsePasted } from './transcribe.js';
 import { streamChat, checkCredentials, describeModel, activeProvider, missingCredentials, ANTHROPIC_MODELS, OPENAI_MODELS } from './ai.js';
@@ -213,7 +214,7 @@ async function stopRecording() {
     const session = await saveRecording({ blob, durationMs, kind, mime, transcript: liveResult });
     await openSession(session.id);
     if (liveResult) await makeNote();
-    if (!liveResult && state.settings.autoTranscribe && state.settings.transcriber === 'openai' && (state.settings.openaiKey || state.settings.proxyUrl)) {
+    if (!liveResult && state.settings.autoTranscribe && (state.settings.transcriber === 'local' || (state.settings.transcriber === 'openai' && (state.settings.openaiKey || state.settings.proxyUrl)))) {
       runTranscription();
     }
   } catch (err) {
@@ -238,7 +239,7 @@ async function onImport(event) {
       title: file.name.replace(/\.[^.]+$/, ''),
     });
     await openSession(session.id);
-    if (state.settings.autoTranscribe && state.settings.transcriber === 'openai' && (state.settings.openaiKey || state.settings.proxyUrl)) runTranscription();
+    if (state.settings.autoTranscribe && (state.settings.transcriber === 'local' || (state.settings.transcriber === 'openai' && (state.settings.openaiKey || state.settings.proxyUrl)))) runTranscription();
   } catch (err) {
     toast(err.message || String(err), 'error');
   }
@@ -402,7 +403,7 @@ function renderTranscript() {
   body.innerHTML = '';
   if (!t || !t.text) {
     body.className = 'transcript empty-state';
-    body.textContent = 'Tap Paste to add words you already have, or Transcribe to turn recorded audio into text using your OpenAI API key.';
+    body.textContent = 'Tap Paste to add words you already have, or Transcribe to turn recorded audio into text. Free on-device transcription needs no API key.';
     return;
   }
   body.className = 'transcript';
@@ -657,7 +658,7 @@ async function runTranscription() {
   if (!session || state.busy) return;
   if (state.settings.transcriber === 'manual') { pasteTranscript(); return; }
   if (state.settings.transcriber === 'webspeech') {
-    toast('Live transcription only runs while recording. Switch the transcriber to Whisper to transcribe an existing file.', 'error');
+    toast('Live transcription only runs while recording. Select Free on-device transcription in Settings to transcribe an existing file.', 'error');
     return;
   }
   const media = await store.getMedia(session.id);
@@ -666,7 +667,11 @@ async function runTranscription() {
   state.busy = true;
   $('#btn-transcribe').disabled = true;
   try {
-    const transcript = await transcribeWithOpenAI(media.blob, state.settings, {
+    state.transcriptionAbort = new AbortController();
+    $('#btn-cancel-transcription').hidden = false;
+    const transcribe = state.settings.transcriber === 'local' ? transcribeLocally : transcribeWithOpenAI;
+    const transcript = await transcribe(media.blob, state.settings, {
+      signal: state.transcriptionAbort.signal,
       onProgress: (msg) => setStatus(msg),
     });
     if (!transcript.text) throw new Error('Nothing recognisable in the audio.');
@@ -683,6 +688,8 @@ async function runTranscription() {
   } finally {
     state.busy = false;
     $('#btn-transcribe').disabled = false;
+    $('#btn-cancel-transcription').hidden = true;
+    state.transcriptionAbort = null;
   }
 }
 
@@ -823,6 +830,7 @@ function syncSettingsUi() {
   $('#set-openai-key2').value = s.openaiKey;
 
   const note = {
+    local: 'Free, no key. Audio stays on your device. First use downloads the speech engine and model (tens of MB); Wi-Fi recommended. Keep the app open. Limit: 10 minutes / 100 MB per clip. Accuracy and speed vary. No automatic paid fallback.',
     openai: 'Audio is uploaded to OpenAI and transcribed there. Long recordings are split up automatically.',
     webspeech: canRecogniseLive
       ? 'Runs while you record, using the browser\'s own recogniser. Nothing is uploaded by this app, but the browser may use a cloud service.'
@@ -864,6 +872,7 @@ function initInstall() {
 
 function initSessionView() {
   $('#btn-transcribe').addEventListener('click', runTranscription);
+  $('#btn-cancel-transcription').addEventListener('click', () => state.transcriptionAbort?.abort());
   $('#btn-paste-transcript').addEventListener('click', pasteTranscript);
   $('#btn-copy-transcript').addEventListener('click', () => copyText(state.current?.transcript?.text || ''));
   $('#btn-suggest').addEventListener('click', suggestActions);
@@ -964,7 +973,7 @@ async function makeNote() {
   const text = session.transcript?.text?.trim();
   if (!text) { toast('Add a transcript first.'); selectSessionTab('transcript'); return; }
   if (session.notes && !confirm('Replace your current note with a new concise note?')) return;
-  const hasAI = !missingCredentials(state.settings);
+  const hasAI = state.settings.transcriber !== 'local' && !missingCredentials(state.settings);
   state.busy = true;
   $('#btn-make-note').disabled = true;
   $('#note-editor').readOnly = true;

@@ -824,6 +824,16 @@ function initSessionView() {
   });
 }
 
+async function checkStorage() {
+  const mode = await store.storageMode();
+  if (mode === 'durable') return;
+  const banner = $('#storage-warning');
+  banner.hidden = false;
+  banner.textContent = location.protocol === 'file:'
+    ? 'Opened straight from a file, so this browser will not give the page a database — recordings last until you close the tab. Host the file (or use the Home Screen version) to keep them.'
+    : 'This browser is not letting the page store data — private browsing usually does that. Recordings will be lost when the tab closes.';
+}
+
 function init() {
   $$('[data-goto]').forEach((el) => el.addEventListener('click', () => go(el.dataset.goto)));
   initRecordView();
@@ -836,11 +846,15 @@ function init() {
     if (state.recorder.active) { e.preventDefault(); e.returnValue = ''; }
   });
 
-  if ('serviceWorker' in navigator) {
+  // The single-file build has no sw.js beside it, and a page opened from disk
+  // cannot register one at all.
+  if (!window.__CLIPMIND_SINGLE_FILE__ && location.protocol.startsWith('http') && 'serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./sw.js').catch((err) => console.warn('sw', err));
     });
   }
+
+  checkStorage();
 }
 
 init();

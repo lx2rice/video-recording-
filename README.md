@@ -27,6 +27,27 @@ transcript, so the model can answer about things that were shown rather than sai
 
 ---
 
+## Just want one file?
+
+`clipmind.html` is the whole app in a single file — styles, code and icons inlined, nothing fetched at
+runtime. Download it, double-click it, and it runs.
+
+That works beautifully **on a computer**. For the **iPhone Home Screen** it needs to come from a URL:
+Safari won't add a `file://` page to the Home Screen, and it blocks the microphone on one. So on a phone,
+put the file somewhere that serves HTTPS — the GitHub Pages steps below take about a minute, and
+`clipmind.html` also gets published there, at `.../video-recording-/clipmind.html`.
+
+Opened from disk, the app notices it has no database and says so: recordings last until you close the
+tab. Served from any URL, they persist normally.
+
+Rebuild it after changing anything under `js/`:
+
+```bash
+node tools/build-single.mjs
+```
+
+---
+
 ## Get it on your Home Screen
 
 The app is static files, so anything that serves HTTPS will host it. The quickest is GitHub Pages:
@@ -112,6 +133,7 @@ No build step, no dependencies, Node 18+ only for the server (any static file se
 ### What's in here
 
 ```
+clipmind.html           the whole app as one self-contained file (built)
 index.html              app shell: record / library / session / settings
 styles.css              dark, phone-first
 manifest.webmanifest    Home Screen identity
@@ -126,6 +148,7 @@ js/prompts.js           the action menu and the prompts behind it
 js/store.js             IndexedDB + settings
 js/md.js                Markdown renderer (escapes everything first)
 tools/make-icons.py     regenerates the icon set
+tools/build-single.mjs  inlines everything into clipmind.html
 ```
 
 The model calls are plain `fetch` rather than an SDK on purpose: the app ships as static files with no
@@ -144,5 +167,8 @@ turn that off in Settings if your gateway rejects the beta header.
 - **Headphones defeat "listen along"** — the microphone can only hear what's played out loud.
 - **Browser storage is finite** (often a few GB). The Settings screen shows what's used; delete old
   recordings when it fills up.
+- **Opened as a file** (`file://`), Safari gives the page no storage and no microphone, and iOS offers no
+  Home Screen install. Chrome and Firefox on a desktop are far more permissive — the file works fully
+  there.
 - **Very long videos** get their transcript trimmed in the middle before being sent to the model, and the
   app says so in the prompt when that happens.

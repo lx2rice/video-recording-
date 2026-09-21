@@ -67,6 +67,19 @@ a { color: #a692ff; }
   box-shadow: 0 0 0 4px #ff4e6a26;
 }
 
+.banner {
+  margin: 12px 16px 0;
+  padding: 11px 13px;
+  border-radius: 12px;
+  border: 1px solid #ffcc6644;
+  background: #ffcc660f;
+  color: #ffd98a;
+  font-size: 13px;
+  max-width: 720px;
+  align-self: center;
+  width: calc(100% - 32px);
+}
+
 main {
   flex: 1;
   padding: 16px 16px calc(var(--tabbar) + env(safe-area-inset-bottom) + 24px);

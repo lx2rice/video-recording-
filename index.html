@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>ClipMind</title>
+<meta name="description" content="Record what you're watching, get the transcript, and hand it to Claude or ChatGPT." />
+<meta name="theme-color" content="#0e1018" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="ClipMind" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+<link rel="icon" href="./icons/favicon-64.png" sizes="64x64" />
+<link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="dot" aria-hidden="true"></span>
+      <h1 id="view-title">Record</h1>
+    </div>
+    <button id="btn-install" class="ghost small" hidden>Install</button>
+  </header>
+
+  <div class="banner" id="storage-warning" hidden></div>
+
+  <main id="main">
+
+    <!-- ── Record ─────────────────────────────────────────────────────── -->
+    <section class="view" id="view-record" data-view="record">
+      <div class="stage">
+        <div class="pulse" id="pulse"><div class="pulse-fill" id="pulse-fill"></div></div>
+        <div class="timer" id="timer">0:00</div>
+        <div class="stage-hint" id="stage-hint">Pick how you want to capture this one.</div>
+      </div>
+
+      <div class="modes" id="modes">
+        <button class="mode" data-mode="screen">
+          <span class="mode-icon">🖥️</span>
+          <span class="mode-text"><strong>Record the screen</strong><small id="mode-screen-note">Screen + sound, straight into the app</small></span>
+        </button>
+        <button class="mode" data-mode="mic">
+          <span class="mode-icon">🎙️</span>
+          <span class="mode-text"><strong>Listen along</strong><small>Records audio out loud while you watch elsewhere</small></span>
+        </button>
+        <button class="mode" data-mode="import">
+          <span class="mode-icon">📥</span>
+          <span class="mode-text"><strong>Import a recording</strong><small id="mode-import-note">A screen recording or clip already on your phone</small></span>
+        </button>
+      </div>
+
+      <div class="recording-controls" id="recording-controls" hidden>
+        <button id="btn-pause" class="ghost">Pause</button>
+        <button id="btn-stop" class="danger big">Stop &amp; process</button>
+        <button id="btn-discard" class="ghost">Discard</button>
+      </div>
+
+      <div class="live-transcript" id="live-transcript" hidden>
+        <h3>Live transcript</h3>
+        <p id="live-text"></p>
+      </div>
+
+      <p class="tip" id="record-tip"></p>
+      <input type="file" id="file-input" accept="video/*,audio/*" hidden />
+    </section>
+
+    <!-- ── Library ────────────────────────────────────────────────────── -->
+    <section class="view" id="view-library" data-view="library" hidden>
+      <div id="library-list" class="library"></div>
+      <div class="empty" id="library-empty" hidden>
+        <p>Nothing recorded yet.</p>
+        <button class="primary" data-goto="record">Record something</button>
+      </div>
+    </section>
+
+    <!-- ── One session ────────────────────────────────────────────────── -->
+    <section class="view" id="view-session" data-view="session" hidden>
+      <button class="back" data-goto="library">‹ Library</button>
+
+      <div class="player-wrap" id="player-wrap"></div>
+
+      <input class="title-input" id="session-title" aria-label="Title" />
+      <div class="meta-row" id="session-meta"></div>
+
+      <div class="panel" id="transcript-panel">
+        <div class="panel-head">
+          <h3>Transcript</h3>
+          <div class="panel-actions">
+            <button class="ghost small" id="btn-transcribe">Transcribe</button>
+            <button class="ghost small" id="btn-paste-transcript">Paste</button>
+            <button class="ghost small" id="btn-copy-transcript">Copy</button>
+          </div>
+        </div>
+        <div class="status" id="transcript-status" hidden></div>
+        <div class="transcript" id="transcript-body"></div>
+      </div>
+
+      <div class="panel ask" id="ask-panel">
+        <div class="panel-head">
+          <h3>What do you want to do with this?</h3>
+          <button class="ghost small" id="btn-suggest">Suggest</button>
+        </div>
+        <div class="chips" id="action-chips"></div>
+        <div class="action-input" id="action-input" hidden>
+          <label id="action-input-label" for="action-input-field"></label>
+          <div class="row">
+            <input id="action-input-field" />
+            <button class="primary" id="btn-run-action">Go</button>
+          </div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="chk-frames" />
+          <span>Also send still frames from the video <small>(better for visual content, costs more)</small></span>
+        </label>
+        <div class="model-note" id="model-note"></div>
+      </div>
+
+      <div id="threads" class="threads"></div>
+    </section>
+
+    <!-- ── Settings ───────────────────────────────────────────────────── -->
+    <section class="view" id="view-settings" data-view="settings" hidden>
+      <div class="panel">
+        <h3>Which AI answers you</h3>
+        <div class="field">
+          <label for="set-provider">Provider</label>
+          <select id="set-provider">
+            <option value="anthropic">Claude (Anthropic)</option>
+            <option value="openai">ChatGPT (OpenAI)</option>
+          </select>
+        </div>
+
+        <div data-provider="anthropic">
+          <div class="field">
+            <label for="set-anthropic-key">Anthropic API key</label>
+            <input id="set-anthropic-key" type="password" placeholder="sk-ant-…" autocomplete="off" />
+            <small>From <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>. Stored only on this device.</small>
+          </div>
+          <div class="field">
+            <label for="set-anthropic-model">Model</label>
+            <input id="set-anthropic-model" list="anthropic-models" />
+            <datalist id="anthropic-models"></datalist>
+          </div>
+          <div class="field">
+            <label for="set-effort">Effort</label>
+            <select id="set-effort">
+              <option value="low">Low — quick and cheap</option>
+              <option value="medium">Medium</option>
+              <option value="high">High — the default</option>
+              <option value="xhigh">Extra high</option>
+              <option value="max">Max — slowest, most thorough</option>
+            </select>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="set-fallbacks" />
+            <span>Use a fallback model if a request is declined <small>(on by default; turn off if your gateway rejects the beta header)</small></span>
+          </label>
+        </div>
+
+        <div data-provider="openai" hidden>
+          <div class="field">
+            <label for="set-openai-key">OpenAI API key</label>
+            <input id="set-openai-key" type="password" placeholder="sk-…" autocomplete="off" />
+            <small>From <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com</a>. Stored only on this device.</small>
+          </div>
+          <div class="field">
+            <label for="set-openai-model">Model</label>
+            <input id="set-openai-model" list="openai-models" />
+            <datalist id="openai-models"></datalist>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Transcription</h3>
+        <div class="field">
+          <label for="set-transcriber">How to get the words</label>
+          <select id="set-transcriber">
+            <option value="openai">Upload to OpenAI Whisper — accurate, timestamped</option>
+            <option value="webspeech">Live in the browser — free, no timestamps</option>
+            <option value="manual">Paste it myself</option>
+          </select>
+          <small id="transcriber-note"></small>
+        </div>
+        <div class="field" data-transcriber="openai">
+          <label for="set-openai-key2">OpenAI API key (for Whisper)</label>
+          <input id="set-openai-key2" type="password" placeholder="sk-…" autocomplete="off" />
+          <small>Whisper is OpenAI's, so this is needed even when Claude writes the answers.</small>
+        </div>
+        <div class="field" data-transcriber="openai">
+          <label for="set-whisper-model">Speech model</label>
+          <input id="set-whisper-model" list="whisper-models" />
+          <datalist id="whisper-models">
+            <option value="whisper-1"></option>
+            <option value="gpt-4o-transcribe"></option>
+            <option value="gpt-4o-mini-transcribe"></option>
+          </datalist>
+        </div>
+        <div class="field">
+          <label for="set-language">Spoken language <small>(optional, improves accuracy)</small></label>
+          <input id="set-language" placeholder="e.g. en, es, de" />
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="set-auto-transcribe" />
+          <span>Transcribe automatically when a recording finishes</span>
+        </label>
+      </div>
+
+      <div class="panel">
+        <h3>Recording</h3>
+        <label class="toggle">
+          <input type="checkbox" id="set-mic-with-screen" />
+          <span>Mix in the microphone when recording the screen <small>(catches your own commentary)</small></span>
+        </label>
+        <div class="field">
+          <label for="set-frame-count">Still frames to send when frames are enabled</label>
+          <input id="set-frame-count" type="number" min="1" max="20" />
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Keys on a server instead</h3>
+        <div class="field">
+          <label for="set-proxy">Proxy URL <small>(optional)</small></label>
+          <input id="set-proxy" placeholder="https://my-proxy.example.com" />
+          <small>Run <code>server.js</code> from this repo and the keys stay in its environment instead of on your phone. Leave empty to call the APIs directly.</small>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Storage</h3>
+        <p class="muted" id="storage-note">Recordings live in this browser only.</p>
+        <button class="danger ghost" id="btn-clear">Delete everything</button>
+      </div>
+
+      <p class="muted centre version">ClipMind · <a href="https://github.com/lx2rice/video-recording-" target="_blank" rel="noopener">source</a></p>
+    </section>
+  </main>
+
+  <nav class="tabs">
+    <button class="tab active" data-goto="record"><span>⏺</span>Record</button>
+    <button class="tab" data-goto="library"><span>🗂</span>Library</button>
+    <button class="tab" data-goto="settings"><span>⚙️</span>Settings</button>
+  </nav>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>

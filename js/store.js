@@ -185,7 +185,7 @@ const SETTINGS_KEY = 'clipmind.settings.v1';
 let settingsFallback = null;
 
 export const defaultSettings = {
-  provider: 'anthropic',            // 'anthropic' | 'openai'
+  provider: 'openai',            // 'anthropic' | 'openai'
   anthropicKey: '',
   anthropicModel: 'claude-opus-5',
   effort: 'high',                   // low | medium | high | xhigh | max
@@ -199,7 +199,7 @@ export const defaultSettings = {
   includeFrames: false,
   frameCount: 6,
   autoTranscribe: true,
-  micWithScreen: true,
+  micWithScreen: false,
 };
 
 export function loadSettings() {

@@ -63,6 +63,7 @@ delete manifest.start_url;
 delete manifest.scope;
 
 let html = read('index.html');
+html = html.replace('src="./icons/icon-192.png"', `src="${dataUri('icons/icon-192.png', 'image/png')}"`);
 
 // Inserted with a replacer function, never a replacement string: file content
 // contains `$$` (and `$&`), which a string replacement would eat.

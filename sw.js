@@ -2,7 +2,7 @@
 // precached and served cache-first; API calls are cross-origin POSTs and never
 // touch this worker.
 
-const VERSION = 'clipmind-v1';
+const VERSION = 'clipmind-v2-notebook';
 const SHELL = [
   './',
   './index.html',
@@ -33,7 +33,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('clipmind-') && k !== VERSION).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });

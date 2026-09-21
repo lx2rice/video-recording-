@@ -8,11 +8,25 @@ and the transcript you choose to ask about, sent straight to your own API key.
 
 <p align="center"><img src="icons/icon-192.png" width="96" alt=""></p>
 
+## Redesigned as a phone notebook
+
+The main flow is **Capture → Transcript → Concise note**. Three bottom tabs keep Capture, Notes and Settings in thumb reach.
+
+- Import a video/audio recording, record audio, or paste an existing transcript into a full-size editor.
+- On iPhone, record the source video with Control Centre, then import it. A Home Screen web app cannot capture another app directly. Some source apps block recording.
+- Supported desktop browsers can capture a selected screen/tab; audio availability varies. Mobile browsers should use import when screen capture is unavailable.
+- Full transcripts are saved without truncation and have one-tap Copy for pasting into ChatGPT or another AI. Opening ChatGPT does not automatically send anything.
+- A connected AI provider creates a concise summary automatically after transcription or first transcript paste. Without credentials, the app selects **Extracted highlights** locally, explicitly labelled as sentence extraction rather than an AI summary.
+- Notes are editable and save on leaving the field or tapping Save note. Search titles, notes and transcripts. Export a text file containing both the note and full transcript.
+- Audio-to-text requires an OpenAI API key (or configured proxy). Existing live microphone recognition remains available where the browser supports it; it does not transcribe another app's internal audio.
+- Existing IndexedDB records and settings are retained. Content is device-local, not cloud backed up; clearing site data removes it.
+- The API-backed paths require valid credentials and provider availability. No credentials are bundled with this repository.
+
 ---
 
 ## What it does
 
-1. **Capture** — record the screen with its sound (desktop, Android), listen along with the microphone,
+1. **Capture** — record the screen with its sound (supported desktop browsers), listen along with the microphone,
    or import a screen recording your phone already made (this is the iPhone route).
 2. **Transcribe** — upload the audio to OpenAI Whisper for a timestamped transcript, use the browser's own
    live recogniser for free, or paste a transcript you already have.
@@ -62,7 +76,7 @@ The app is static files, so anything that serves HTTPS will host it. The quickes
 HTTPS matters: the microphone and screen capture are blocked on plain `http://`, with `localhost`
 the one exception.
 
-Then open **Settings** in the app and paste an API key. Each key field has a **Paste** button and a
+For automatic transcription and AI summaries, optionally open **Settings** in the app and add an API key. Pasting transcripts, local highlights, editing and copying do not need a key. Each key field has a **Paste** button and a
 **Check** button — Check makes one tiny call and tells you straight away whether the key works, rather
 than letting you find out when your first question fails.
 
@@ -91,7 +105,7 @@ these steps itself, under **How to record your phone screen** on the Record tab:
 **Listen along** is the quick alternative: it records through the microphone while the video plays out
 loud on another device. No screen needed, but not if you're wearing headphones.
 
-On a laptop or Android, **Record the screen** does everything in one step — pick the tab and tick
+In supported desktop browsers, **Record the screen** does everything in one step — pick the tab and tick
 *share tab audio* so the sound is captured cleanly rather than through the room.
 
 ---
@@ -138,7 +152,7 @@ No build step, no dependencies, Node 18+ only for the server (any static file se
 ```
 clipmind.html           the whole app as one self-contained file (built)
 index.html              app shell: record / library / session / settings
-styles.css              dark, phone-first
+styles.css              light lavender, phone-first
 manifest.webmanifest    Home Screen identity
 sw.js                   offline shell
 server.js               dev server + optional key-hiding proxy

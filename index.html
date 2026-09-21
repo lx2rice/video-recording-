@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>ClipMind</title>
 <meta name="description" content="Record what you're watching, get the transcript, and hand it to Claude or ChatGPT." />
-<meta name="theme-color" content="#0e1018" />
+<meta name="theme-color" content="#f6f5fa" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="apple-mobile-web-app-title" content="ClipMind" />
 <link rel="manifest" href="./manifest.webmanifest" />
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
@@ -19,22 +19,23 @@
 
   <header class="topbar">
     <div class="brand">
-      <span class="dot" aria-hidden="true"></span>
-      <h1 id="view-title">Record</h1>
+      <img class="brand-icon" src="./icons/icon-192.png" alt="" /><div><strong class="wordmark">ClipMind</strong><span id="view-title">Capture</span></div>
     </div>
     <button id="btn-install" class="ghost small" hidden>Install</button>
   </header>
 
   <div class="banner" id="storage-warning" hidden></div>
   <div class="banner setup" id="setup-prompt" hidden>
-    <strong>One thing first —</strong> add an API key so the AI can answer.
-    <button class="primary small" data-goto="settings">Open Settings</button>
+    <strong>AI is optional.</strong> Import, paste, save and copy without a key. Connect AI for automatic transcription and summaries.
+    <button class="primary small" data-goto="settings">Connect AI</button>
   </div>
 
   <main id="main">
 
     <!-- ── Record ─────────────────────────────────────────────────────── -->
     <section class="view" id="view-record" data-view="record">
+      <div class="intro"><span class="eyebrow">YOUR VIDEO NOTEBOOK</span><h2>Watch it.<br>Keep what matters.</h2><p>Turn a video into words, a concise note,<br>and ideas you can use.</p></div>
+      <div class="journey" aria-label="Workflow"><span><b>1</b> Capture</span><span><b>2</b> Transcript</span><span><b>3</b> Note</span></div>
       <div class="stage">
         <div class="pulse" id="pulse"><div class="pulse-fill" id="pulse-fill"></div></div>
         <div class="timer" id="timer">0:00</div>
@@ -42,23 +43,14 @@
       </div>
 
       <div class="modes" id="modes">
-        <button class="mode" data-mode="screen">
-          <span class="mode-icon">🖥️</span>
-          <span class="mode-text"><strong>Record the screen</strong><small id="mode-screen-note">Screen + sound, straight into the app</small></span>
-        </button>
-        <button class="mode" data-mode="mic">
-          <span class="mode-icon">🎙️</span>
-          <span class="mode-text"><strong>Listen along</strong><small>Records audio out loud while you watch elsewhere</small></span>
-        </button>
-        <button class="mode" data-mode="import">
-          <span class="mode-icon">📥</span>
-          <span class="mode-text"><strong>Import a recording</strong><small id="mode-import-note">A screen recording or clip already on your phone</small></span>
-        </button>
+        <button class="mode import-primary" data-mode="import"><span class="mode-icon">↥</span><span class="mode-text"><strong>Import a video</strong><small id="mode-import-note">Choose a screen recording, video or audio file</small></span><span class="arrow">→</span></button>
+        <button class="mode" id="btn-new-transcript"><span class="mode-icon">≡</span><span class="mode-text"><strong>Paste a transcript</strong><small>Already have the words? Start here.</small></span><span class="arrow">→</span></button>
+        <button class="mode" data-mode="mic"><span class="mode-icon">♩</span><span class="mode-text"><strong>Record audio</strong><small>Listen to a video playing on another device</small></span><span class="arrow">→</span></button>
+        <button class="mode" data-mode="screen"><span class="mode-icon">▣</span><span class="mode-text"><strong>Record the screen</strong><small id="mode-screen-note">Choose a tab and share its audio</small></span><span class="arrow">→</span></button>
       </div>
-
       <div class="recording-controls" id="recording-controls" hidden>
         <button id="btn-pause" class="ghost">Pause</button>
-        <button id="btn-stop" class="danger big">Stop &amp; process</button>
+        <button id="btn-stop" class="danger big">Stop &amp; save</button>
         <button id="btn-discard" class="ghost">Discard</button>
       </div>
 
@@ -71,14 +63,14 @@
         <summary>How to record your phone screen</summary>
         <ol>
           <li>Swipe down for <strong>Control Centre</strong>. No ⏺ button? Add it in
-              Settings → Control Centre → <em>Screen Recording</em>.</li>
+              Control Centre using its <strong>+</strong> button.</li>
           <li><strong>Long-press</strong> the ⏺ button and make sure <strong>Microphone is off</strong> —
               you want the video's own sound, not the room.</li>
           <li>Tap <strong>Start Recording</strong>, wait for the countdown, then play your video.</li>
-          <li>Tap the red clock in the status bar → <strong>Stop</strong>. iOS saves it to Photos.</li>
+          <li>Tap the Screen Recording indicator → <strong>Stop</strong>. iOS saves it to Photos.</li>
           <li>Come back here and tap <strong>Import a recording</strong>.</li>
         </ol>
-        <p>Leave this app while recording — iOS keeps recording everything on screen.</p>
+        <p>Some apps block audio or video recording. Check that your saved clip has sound before importing.</p>
       </details>
 
       <p class="tip" id="record-tip"></p>
@@ -87,35 +79,47 @@
 
     <!-- ── Library ────────────────────────────────────────────────────── -->
     <section class="view" id="view-library" data-view="library" hidden>
+      <div class="section-heading"><span class="eyebrow">YOUR PERSONAL NOTEBOOK</span><h2>Saved notes</h2><p>Videos, words and the things worth keeping.</p></div>
+      <label class="searchbox"><span aria-hidden="true">⌕</span><input id="library-search" type="search" aria-label="Search saved notes" placeholder="Search titles, notes or transcripts" /></label>
+      <div id="library-count" class="muted"></div><p id="search-empty" class="empty" hidden>No matches. Try a different word.</p>
       <div id="library-list" class="library"></div>
       <div class="empty" id="library-empty" hidden>
-        <p>Nothing recorded yet.</p>
-        <button class="primary" data-goto="record">Record something</button>
+        <p>Your next useful idea belongs here.</p>
+        <button class="primary" data-goto="record">Add your first video</button>
       </div>
     </section>
 
     <!-- ── One session ────────────────────────────────────────────────── -->
     <section class="view" id="view-session" data-view="session" hidden>
-      <button class="back" data-goto="library">‹ Library</button>
+      <button class="back" data-goto="library">‹ Saved notes</button>
 
       <div class="player-wrap" id="player-wrap"></div>
 
       <input class="title-input" id="session-title" aria-label="Title" />
       <div class="meta-row" id="session-meta"></div>
 
-      <div class="panel" id="transcript-panel">
+      <div class="session-switch" role="group" aria-label="Note or transcript"><button id="tab-note" class="selected" aria-pressed="true">Concise note</button><button id="tab-transcript" aria-pressed="false">Full transcript</button></div>
+      <section class="panel note-panel" id="note-panel">
+        <div class="panel-head"><h3>The ideas to keep</h3><span class="badge" id="note-kind">Your note</span></div>
+        <p class="muted" id="note-status" role="status">Add a transcript to create a concise note.</p>
+        <label class="sr-only" for="note-editor">Edit your concise note</label><textarea id="note-editor" placeholder="Your concise note will appear here. You can also write your own." rows="8"></textarea>
+        <div class="note-actions"><button class="primary" id="btn-make-note">Create concise note</button><button class="ghost" id="btn-save-note">Save note</button><button class="ghost" id="btn-copy-note">Copy note</button><button class="ghost" id="btn-export-note">Export .txt</button></div>
+      </section>
+      <div class="panel" id="transcript-panel" hidden>
         <div class="panel-head">
-          <h3>Transcript</h3>
+          <h3>Full transcript</h3>
           <div class="panel-actions">
             <button class="ghost small" id="btn-transcribe">Transcribe</button>
             <button class="ghost small" id="btn-paste-transcript">Paste</button>
-            <button class="ghost small" id="btn-copy-transcript">Copy</button>
+            <button class="ghost small" id="btn-copy-transcript">Copy all</button>
           </div>
         </div>
         <div class="status" id="transcript-status" hidden></div>
         <div class="transcript" id="transcript-body"></div>
       </div>
 
+      <div class="export-panel"><div><strong>Take it to your AI</strong><p>Copy the full transcript, then paste it into ChatGPT or any AI you use.</p></div><button class="primary" id="btn-copy-for-ai">Copy transcript</button><a href="https://chatgpt.com/" target="_blank" rel="noopener" class="external-link">Open ChatGPT ↗</a></div>
+      <details class="advanced"><summary>More analysis inside ClipMind <small>Optional · uses your API key</small></summary>
       <div class="panel ask" id="ask-panel">
         <div class="panel-head">
           <h3>What do you want to do with this?</h3>
@@ -137,12 +141,15 @@
       </div>
 
       <div id="threads" class="threads"></div>
+      </details>
     </section>
 
     <!-- ── Settings ───────────────────────────────────────────────────── -->
     <section class="view" id="view-settings" data-view="settings" hidden>
+      <div class="section-heading"><span class="eyebrow">MAKE IT YOURS</span><h2>Settings</h2><p>No ClipMind account needed. AI services are optional and may charge separately.</p></div>
+      <div class="panel"><h3>Add to Home Screen</h3><p>On iPhone, open this site in Safari, tap Share, then Add to Home Screen. Open the new ClipMind icon to use it like an app.</p><p class="muted">Saved content stays in this browser on this device. Export important notes before clearing site data.</p></div>
       <div class="panel">
-        <h3>Which AI answers you</h3>
+        <h3>AI for summaries &amp; analysis</h3>
         <div class="field">
           <label for="set-provider">Provider</label>
           <select id="set-provider">
@@ -273,13 +280,14 @@
   </main>
 
   <nav class="tabs">
-    <button class="tab active" data-goto="record"><span>⏺</span>Record</button>
-    <button class="tab" data-goto="library"><span>🗂</span>Library</button>
-    <button class="tab" data-goto="settings"><span>⚙️</span>Settings</button>
+    <button class="tab active" data-goto="record"><span>⊕</span>Capture</button>
+    <button class="tab" data-goto="library"><span>▤</span>Notes</button>
+    <button class="tab" data-goto="settings"><span>⚙</span>Settings</button>
   </nav>
 </div>
 
-<div class="toast" id="toast" hidden></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<dialog id="transcript-dialog"><form method="dialog" id="transcript-form"><div class="panel-head"><h2>Paste your transcript</h2><button class="ghost" value="cancel" aria-label="Close">✕</button></div><label for="transcript-title">Video title</label><input id="transcript-title" placeholder="Give this video a name" /><label for="transcript-input">Transcript</label><textarea id="transcript-input" rows="12" placeholder="Paste the words here. Timestamps are welcome."></textarea><p class="muted">The full text is saved. No AI key needed.</p><div class="note-actions"><button class="ghost" value="cancel">Cancel</button><button class="primary" id="btn-save-transcript" type="button">Save transcript</button></div></form></dialog>
 
 <script type="module" src="./js/app.js"></script>
 </body>
